@@ -15,14 +15,13 @@ public class newMemberPage extends JFrame {
     private ButtonGroup membershipGroup;
 
     public newMemberPage() {
-        
+
         setTitle("New Member Registration");
         setSize(900, 500);
         setLayout(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setBackground(new Color(146, 34, 62));
 
-        
         JLabel bgImage = new JLabel(new ImageIcon("gym_fit.jpg"));
         bgImage.setBounds(580, 0, 320, 500);
         add(bgImage);
@@ -32,7 +31,6 @@ public class newMemberPage extends JFrame {
 
         int labelX = 40, fieldX = 180, y = 60, gap = 40;
 
-        
         addLabel("NAME:", labelX, y, labelFont, textColor);
         nameField = addTextField(fieldX, y);
 
@@ -64,7 +62,6 @@ public class newMemberPage extends JFrame {
         passwordField.setBounds(fieldX, y, 150, 25);
         add(passwordField);
 
-        
         JLabel membershipLabel = new JLabel("MEMBERSHIP TYPE:");
         membershipLabel.setFont(labelFont);
         membershipLabel.setForeground(textColor);
@@ -91,7 +88,6 @@ public class newMemberPage extends JFrame {
             memY += 30;
         }
 
-        
         JLabel timeLabel = new JLabel("TIME SLOT:");
         timeLabel.setFont(labelFont);
         timeLabel.setForeground(textColor);
@@ -102,7 +98,6 @@ public class newMemberPage extends JFrame {
         timeBox.setBounds(470, 230, 150, 25);
         add(timeBox);
 
-        
         createButton = new JButton("CREATE");
         createButton.setBounds(400, 300, 160, 40);
         createButton.setBackground(Color.WHITE);
@@ -110,7 +105,6 @@ public class newMemberPage extends JFrame {
         createButton.setFocusPainted(false);
         add(createButton);
 
-       
         createButton.addActionListener(e -> insertData());
 
         setVisible(true);
@@ -132,13 +126,13 @@ public class newMemberPage extends JFrame {
     }
 
     private void insertData() {
-        String name = nameField.getText();
-        String age = ageField.getText();
-        String mobile = mobileField.getText();
+        String name = nameField.getText().trim();
+        String age = ageField.getText().trim();
+        String mobile = mobileField.getText().trim();
         String gender = (String) genderBox.getSelectedItem();
-        String weight = weightField.getText();
-        String height = heightField.getText();
-        String password = new String(passwordField.getPassword());
+        String weight = weightField.getText().trim();
+        String height = heightField.getText().trim();
+        String password = new String(passwordField.getPassword()).trim();
         String time = (String) timeBox.getSelectedItem();
 
         String membership = "";
@@ -154,8 +148,10 @@ public class newMemberPage extends JFrame {
 
         try {
             Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/gym_fit", "root", "");
-            String query = "INSERT INTO members (name, age, mobile, gender, weight, height, membership, password, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps = con.prepareStatement(query);
+
+            // ===== Insert into members table =====
+            String memberQuery = "INSERT INTO members (name, age, mobile, gender, weight, height, membership, password, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement ps = con.prepareStatement(memberQuery, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, name);
             ps.setString(2, age);
             ps.setString(3, mobile);
@@ -165,15 +161,35 @@ public class newMemberPage extends JFrame {
             ps.setString(7, membership);
             ps.setString(8, password);
             ps.setString(9, time);
-
             ps.executeUpdate();
-            JOptionPane.showMessageDialog(this, "Member Registered Successfully!");
+
+            // Get generated member ID
+            ResultSet rs = ps.getGeneratedKeys();
+            int memberId = 0;
+            if (rs.next()) {
+                memberId = rs.getInt(1);
+            }
+
+            // ===== Insert into users table =====
+            String username = name.toLowerCase().replaceAll(" ", "") + memberId;
+            String userQuery = "INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)";
+            PreparedStatement ps2 = con.prepareStatement(userQuery);
+            ps2.setInt(1, memberId);
+            ps2.setString(2, username);
+            ps2.setString(3, password);
+            ps2.setString(4, "member");
+            ps2.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, 
+                "Member Registered Successfully!\n" +
+                "Member ID: " + memberId + "\n" +
+                "Username: " + username);
 
             con.close();
 
-            
-            dispose(); 
-            new LoginDemo();
+            // Close current form and go to login
+            dispose();
+            new LoginDemo(); // <-- replace with your login JFrame class
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage());
