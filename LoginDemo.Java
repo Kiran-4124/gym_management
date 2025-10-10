@@ -9,7 +9,7 @@ public class LoginDemo {
 
     LoginDemo() {
 
-        JFrame frame = new JFrame("Login Page");  
+        JFrame frame = new JFrame("Login Page");
         frame.setSize(600, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(null);
@@ -66,7 +66,6 @@ public class LoginDemo {
         submitButton.setBackground(buttonColor);
         mainPanel.add(submitButton);
 
-        
         JLabel forgotLabel = new JLabel("FORGOT PASSWORD:");
         forgotLabel.setBounds(10, 290, 150, 25);
         forgotLabel.setForeground(Color.WHITE);
@@ -77,7 +76,6 @@ public class LoginDemo {
         forgotButton.setBackground(buttonColor);
         mainPanel.add(forgotButton);
 
-        
         JLabel newMemberLabel = new JLabel("NEW MEMBER:");
         newMemberLabel.setBounds(20, 330, 100, 25);
         newMemberLabel.setForeground(Color.WHITE);
@@ -88,7 +86,7 @@ public class LoginDemo {
         newMemberButton.setBackground(buttonColor);
         mainPanel.add(newMemberButton);
 
-     
+        // 🔹 LOGIN BUTTON ACTION
         submitButton.addActionListener(e -> {
             String username = userField.getText().trim();
             String password = new String(passwordField.getPassword());
@@ -98,12 +96,12 @@ public class LoginDemo {
             String dbUsername = "root";
             String dbPassword = "";
 
-            try (Connection conn = DriverManager.getConnection(url, dbUsername, dbPassword);
-                 PreparedStatement pst = conn.prepareStatement(
-                         "SELECT * FROM users WHERE username = ? AND password = ? AND role = ?")) {
-
+            try {
                 Class.forName("com.mysql.cj.jdbc.Driver");
+                Connection conn = DriverManager.getConnection(url, dbUsername, dbPassword);
 
+                PreparedStatement pst = conn.prepareStatement(
+                        "SELECT * FROM users WHERE username = ? AND password = ? AND role = ?");
                 pst.setString(1, username);
                 pst.setString(2, password);
                 pst.setString(3, selectedRole);
@@ -114,11 +112,25 @@ public class LoginDemo {
                     JOptionPane.showMessageDialog(frame,
                             "✅ Login Successful as " + selectedRole.toUpperCase() + "!",
                             "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                    frame.dispose(); // close login page
+
+                    // ✅ Redirect to Dashboard based on Role
+                    if (selectedRole.equals("member")) {
+                        new memberlogin(username);
+                    } else if (selectedRole.equals("admin")) {
+                        JOptionPane.showMessageDialog(null, "Admin dashboard coming soon!");
+                    } else if (selectedRole.equals("trainer")) {
+                        JOptionPane.showMessageDialog(null, "Trainer dashboard coming soon!");
+                    }
+
                 } else {
                     JOptionPane.showMessageDialog(frame,
                             "❌ Invalid Username, Password, or Role",
                             "Login Failed", JOptionPane.ERROR_MESSAGE);
                 }
+
+                conn.close();
 
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -128,13 +140,13 @@ public class LoginDemo {
             }
         });
 
-       
+        // 🔹 FORGOT PASSWORD BUTTON
         forgotButton.addActionListener(e -> {
             frame.dispose();
             new forgotPasswordPage();
         });
 
-       
+        // 🔹 NEW MEMBER BUTTON
         newMemberButton.addActionListener(e -> {
             frame.dispose();
             new newMemberPage();
