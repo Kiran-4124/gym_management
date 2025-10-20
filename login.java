@@ -2,96 +2,162 @@ package project_UI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
 
 public class login {
 
-    login(){
-       
-        JFrame frame = new JFrame("GYM-FIT");
+    login() {
+
+        JFrame frame = new JFrame("Login Page");
         frame.setSize(600, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(null);
         Color buttonColor = new Color(245, 232, 215);
 
-       
         JPanel mainPanel = new JPanel();
         mainPanel.setBounds(150, 0, 300, 500);
-        mainPanel.setBackground(new Color(165, 36, 59)); 
+        mainPanel.setBackground(new Color(165, 36, 59));
         mainPanel.setLayout(null);
         frame.add(mainPanel);
 
-        
         JLabel title = new JLabel("GYM-FIT");
         title.setFont(new Font("Arial", Font.BOLD, 20));
-        title.setBounds(100, 30, 200, 30);
+        title.setForeground(Color.WHITE);
+        title.setBounds(110, 30, 200, 30);
         mainPanel.add(title);
 
-       
         JLabel loginLabel = new JLabel("LOGIN");
         loginLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        loginLabel.setBounds(110, 70, 100, 30);
+        loginLabel.setForeground(Color.WHITE);
+        loginLabel.setBounds(120, 70, 100, 30);
         mainPanel.add(loginLabel);
 
-       
-        JLabel idLabel = new JLabel("ID:");
-        idLabel.setBounds(30, 120, 100, 25);
-        mainPanel.add(idLabel);
-        idLabel.setForeground(Color.WHITE);
+        JLabel userLabel = new JLabel("USERNAME:");
+        userLabel.setBounds(10, 120, 100, 25);
+        userLabel.setForeground(Color.WHITE);
+        mainPanel.add(userLabel);
 
-        JTextField idField = new JTextField();
-        idField.setBounds(100, 120, 150, 25);
-        mainPanel.add(idField);
+        JTextField userField = new JTextField();
+        userField.setBounds(100, 120, 150, 25);
+        mainPanel.add(userField);
 
-        
         JLabel passwordLabel = new JLabel("PASSWORD:");
         passwordLabel.setBounds(10, 160, 100, 25);
-        mainPanel.add(passwordLabel);
         passwordLabel.setForeground(Color.WHITE);
+        mainPanel.add(passwordLabel);
 
         JPasswordField passwordField = new JPasswordField();
         passwordField.setBounds(100, 160, 150, 25);
         mainPanel.add(passwordField);
 
-    
+        JLabel roleLabel = new JLabel("ROLE:");
+        roleLabel.setBounds(10, 200, 100, 25);
+        roleLabel.setForeground(Color.WHITE);
+        mainPanel.add(roleLabel);
+
+        String[] roles = {"admin", "member", "trainer"};
+        JComboBox<String> roleBox = new JComboBox<>(roles);
+        roleBox.setBounds(100, 200, 150, 25);
+        mainPanel.add(roleBox);
+
         JButton submitButton = new JButton("SUBMIT");
-        submitButton.setBounds(100, 200, 100, 30); 
-        mainPanel.add(submitButton);
+        submitButton.setBounds(100, 240, 100, 30);
         submitButton.setBackground(buttonColor);
-        
+        mainPanel.add(submitButton);
 
-
-        JLabel forgotLabel = new JLabel("FORGOT PASSWORD");
-        forgotLabel.setBounds(10, 250, 150, 25);
-        mainPanel.add(forgotLabel);
+        JLabel forgotLabel = new JLabel("FORGOT PASSWORD:");
+        forgotLabel.setBounds(10, 290, 150, 25);
         forgotLabel.setForeground(Color.WHITE);
+        mainPanel.add(forgotLabel);
 
         JButton forgotButton = new JButton("CLICK HERE");
-        forgotButton.setBounds(160, 250, 120, 25);
-        mainPanel.add(forgotButton);
+        forgotButton.setBounds(160, 290, 120, 25);
         forgotButton.setBackground(buttonColor);
-        
+        mainPanel.add(forgotButton);
 
-        
         JLabel newMemberLabel = new JLabel("NEW MEMBER:");
-        newMemberLabel.setBounds(20, 290, 100, 25);
-        mainPanel.add(newMemberLabel);
+        newMemberLabel.setBounds(20, 330, 100, 25);
         newMemberLabel.setForeground(Color.WHITE);
+        mainPanel.add(newMemberLabel);
 
         JButton newMemberButton = new JButton("CLICK HERE");
-        newMemberButton.setBounds(160, 290, 120, 25);
-        mainPanel.add(newMemberButton);
+        newMemberButton.setBounds(160, 330, 120, 25);
         newMemberButton.setBackground(buttonColor);
-       
+        mainPanel.add(newMemberButton);
 
-       
+        // 🔹 LOGIN BUTTON ACTION
+        submitButton.addActionListener(e -> {
+            String username = userField.getText().trim();
+            String password = new String(passwordField.getPassword());
+            String selectedRole = (String) roleBox.getSelectedItem();
+
+            String url = "jdbc:mysql://localhost:3306/gym_fit";
+            String dbUsername = "root";
+            String dbPassword = "";
+
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                Connection conn = DriverManager.getConnection(url, dbUsername, dbPassword);
+
+                PreparedStatement pst = conn.prepareStatement(
+                        "SELECT * FROM users WHERE username = ? AND password = ? AND role = ?");
+                pst.setString(1, username);
+                pst.setString(2, password);
+                pst.setString(3, selectedRole);
+
+                ResultSet rs = pst.executeQuery();
+
+                if (rs.next()) {
+                    JOptionPane.showMessageDialog(frame,
+                            "✅ Login Successful as " + selectedRole.toUpperCase() + "!",
+                            "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                    frame.dispose(); // close login page
+
+                    // ✅ Redirect to Dashboard based on Role
+                    if (selectedRole.equals("member")) {
+                        new memberlogin(username);
+                    } else if (selectedRole.equals("admin")) {
+                        JOptionPane.showMessageDialog(null, "Admin dashboard coming soon!");
+                    } else if (selectedRole.equals("trainer")) {
+                        JOptionPane.showMessageDialog(null, "Trainer dashboard coming soon!");
+                    }
+
+                } else {
+                    JOptionPane.showMessageDialog(frame,
+                            "❌ Invalid Username, Password, or Role",
+                            "Login Failed", JOptionPane.ERROR_MESSAGE);
+                }
+
+                conn.close();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame,
+                        "Database Error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // 🔹 FORGOT PASSWORD BUTTON
+        forgotButton.addActionListener(e -> {
+            frame.dispose();
+            new forgortPasswordPage();
+        });
+
+        // 🔹 NEW MEMBER BUTTON
+        newMemberButton.addActionListener(e -> {
+            frame.dispose();
+            new newMemberPage();
+        });
+        frame.setJMenuBar(MenuNavigation.createMenu(frame));
+
         frame.setVisible(true);
+        
     }
 
     public static void main(String[] args) {
-    	/**AUTHOR:Rose Mary Joe
-	        * Date:09.10.2025
-	        */
-    	new login();
+        new login();
     }
 }
-
