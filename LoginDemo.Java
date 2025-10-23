@@ -8,7 +8,6 @@ import java.sql.*;
 public class LoginDemo {
 
     LoginDemo() {
-
         JFrame frame = new JFrame("Login Page");
         frame.setSize(600, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -86,7 +85,7 @@ public class LoginDemo {
         newMemberButton.setBackground(buttonColor);
         mainPanel.add(newMemberButton);
 
-        // 🔹 LOGIN BUTTON ACTION
+        // 🔹 LOGIN BUTTON ACTION (ONLY THIS PART IS FIXED)
         submitButton.addActionListener(e -> {
             String username = userField.getText().trim();
             String password = new String(passwordField.getPassword());
@@ -108,29 +107,31 @@ public class LoginDemo {
 
                 ResultSet rs = pst.executeQuery();
 
-                if (rs.next()) {
-                    JOptionPane.showMessageDialog(frame,
-                            "✅ Login Successful as " + selectedRole.toUpperCase() + "!",
-                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                if (rs.next()) {       int memberId = rs.getInt("id");  // numeric member ID
+                String dbUsernameValue = rs.getString("username"); // username
 
-                    frame.dispose(); // close login page
+                JOptionPane.showMessageDialog(frame,
+                        "✅ Login Successful as " + selectedRole.toUpperCase() + "!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
 
-                    // ✅ Redirect to Dashboard based on Role
-                    if (selectedRole.equals("member")) {
-                        new memberlogin(username);
-                    } else if (selectedRole.equals("admin")) {
-                        JOptionPane.showMessageDialog(null, "Admin dashboard coming soon!");
-                    } else if (selectedRole.equals("trainer")) {
-                        JOptionPane.showMessageDialog(null, "Trainer dashboard coming soon!");
-                    }
+                frame.dispose(); // close login page
 
-                } else {
-                    JOptionPane.showMessageDialog(frame,
-                            "❌ Invalid Username, Password, or Role",
-                            "Login Failed", JOptionPane.ERROR_MESSAGE);
+                // Redirect to Dashboard based on Role
+                if (selectedRole.equals("member")) {
+                    new memberlogin(memberId, dbUsernameValue); // pass both ID & username
+                } else if (selectedRole.equals("admin")) {
+                   new Admin1();
+                } else if (selectedRole.equals("trainer")) {
+                    new TestDB1();
                 }
 
-                conn.close();
+            } else {
+                JOptionPane.showMessageDialog(frame,
+                        "❌ Invalid Username, Password, or Role",
+                        "Login Failed", JOptionPane.ERROR_MESSAGE);
+            }
+
+
 
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -151,8 +152,10 @@ public class LoginDemo {
             frame.dispose();
             new newMemberPage();
         });
-
+        frame.setJMenuBar(MenuNavigation.createMenu(frame));
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+
     }
 
     public static void main(String[] args) {
