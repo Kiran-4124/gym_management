@@ -68,7 +68,13 @@ public class memberlogin extends JFrame {
         getContentPane().add(welcome, BorderLayout.NORTH);
         getContentPane().add(contentPanel, BorderLayout.CENTER);
         getContentPane().add(footer, BorderLayout.SOUTH);
-
+        
+        
+        viewMembership.addActionListener(e -> new MembershipPage(memberId, username));
+        
+        viewProfile.addActionListener(e -> {
+            new ProfilePage(memberId, username);
+        });
         // ===== Event Listeners =====
         viewDiet.addActionListener(e -> {
             new ViewDietPlans();
