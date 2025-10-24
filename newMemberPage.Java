@@ -2,12 +2,11 @@ package LoginDemo;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.sql.*;
 
 public class newMemberPage extends JFrame {
 
-    private JTextField nameField, ageField, mobileField, weightField, heightField;
+    private JTextField idField, nameField, ageField, mobileField, weightField, heightField;
     private JPasswordField passwordField;
     private JComboBox<String> genderBox, timeBox;
     private JRadioButton mWithTrainer, mWithoutTrainer, aWithTrainer, aWithoutTrainer;
@@ -17,7 +16,7 @@ public class newMemberPage extends JFrame {
     public newMemberPage() {
 
         setTitle("New Member Registration");
-        setSize(900, 500);
+        setSize(900, 550);
         setLayout(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setBackground(new Color(146, 34, 62));
@@ -29,8 +28,13 @@ public class newMemberPage extends JFrame {
         Font labelFont = new Font("SansSerif", Font.BOLD, 14);
         Color textColor = Color.WHITE;
 
-        int labelX = 40, fieldX = 180, y = 60, gap = 40;
+        int labelX = 40, fieldX = 180, y = 40, gap = 40;
 
+        // Optional ID field
+        addLabel("ID (optional):", labelX, y, labelFont, textColor);
+        idField = addTextField(fieldX, y);
+
+        y += gap;
         addLabel("NAME:", labelX, y, labelFont, textColor);
         nameField = addTextField(fieldX, y);
 
@@ -112,7 +116,7 @@ public class newMemberPage extends JFrame {
 
     private void addLabel(String text, int x, int y, Font f, Color c) {
         JLabel label = new JLabel(text);
-        label.setBounds(x, y, 130, 25);
+        label.setBounds(x, y, 150, 25);
         label.setFont(f);
         label.setForeground(c);
         add(label);
@@ -126,6 +130,7 @@ public class newMemberPage extends JFrame {
     }
 
     private void insertData() {
+        String idText = idField.getText().trim();
         String name = nameField.getText().trim();
         String age = ageField.getText().trim();
         String mobile = mobileField.getText().trim();
@@ -149,29 +154,66 @@ public class newMemberPage extends JFrame {
         try {
             Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/gym_fit", "root", "");
 
-            // ===== Insert into members table =====
-            String memberQuery = "INSERT INTO members (name, age, mobile, gender, weight, height, membership, password, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps = con.prepareStatement(memberQuery, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, name);
-            ps.setString(2, age);
-            ps.setString(3, mobile);
-            ps.setString(4, gender);
-            ps.setString(5, weight);
-            ps.setString(6, height);
-            ps.setString(7, membership);
-            ps.setString(8, password);
-            ps.setString(9, time);
-            ps.executeUpdate();
+            Integer memberId = null;
 
-            // Get generated member ID
-            ResultSet rs = ps.getGeneratedKeys();
-            int memberId = 0;
-            if (rs.next()) {
-                memberId = rs.getInt(1);
+            // Check custom ID if entered
+            if (!idText.isEmpty()) {
+                try {
+                    int customId = Integer.parseInt(idText);
+
+                    PreparedStatement checkStmt = con.prepareStatement("SELECT id FROM members WHERE id = ?");
+                    checkStmt.setInt(1, customId);
+                    ResultSet checkRs = checkStmt.executeQuery();
+                    if (checkRs.next()) {
+                        JOptionPane.showMessageDialog(this, "ID already exists! Please use another ID.");
+                        return;
+                    } else {
+                        memberId = customId;
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Invalid ID! Please enter a number.");
+                    return;
+                }
             }
 
-            // ===== Insert into users table =====
-            String username = name.toLowerCase().replaceAll(" ", "") + memberId;
+            // Insert into members table
+            PreparedStatement ps;
+            if (memberId == null) {
+                String memberQuery = "INSERT INTO members (name, age, mobile, gender, weight, height, membership, password, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                ps = con.prepareStatement(memberQuery, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, name);
+                ps.setString(2, age);
+                ps.setString(3, mobile);
+                ps.setString(4, gender);
+                ps.setString(5, weight);
+                ps.setString(6, height);
+                ps.setString(7, membership);
+                ps.setString(8, password);
+                ps.setString(9, time);
+                ps.executeUpdate();
+
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) memberId = rs.getInt(1);
+            } else {
+                String memberQuery = "INSERT INTO members (id, name, age, mobile, gender, weight, height, membership, password, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                ps = con.prepareStatement(memberQuery);
+                ps.setInt(1, memberId);
+                ps.setString(2, name);
+                ps.setString(3, age);
+                ps.setString(4, mobile);
+                ps.setString(5, gender);
+                ps.setString(6, weight);
+                ps.setString(7, height);
+                ps.setString(8, membership);
+                ps.setString(9, password);
+                ps.setString(10, time);
+                ps.executeUpdate();
+            }
+
+            // Username: full name + ID
+            String username = name.replaceAll("\\s+", "") + memberId;
+
+            // Insert into users table
             String userQuery = "INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)";
             PreparedStatement ps2 = con.prepareStatement(userQuery);
             ps2.setInt(1, memberId);
@@ -180,16 +222,14 @@ public class newMemberPage extends JFrame {
             ps2.setString(4, "member");
             ps2.executeUpdate();
 
-            JOptionPane.showMessageDialog(this, 
-                "Member Registered Successfully!\n" +
-                "Member ID: " + memberId + "\n" +
-                "Username: " + username);
+            JOptionPane.showMessageDialog(this,
+                    "Member Registered Successfully!\n" +
+                            "Member ID: " + memberId + "\n" +
+                            "Username: " + username);
 
             con.close();
-
-            // Close current form and go to login
             dispose();
-            new LoginDemo(); // <-- replace with your login JFrame class
+            new LoginDemo(); // redirect to login page
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage());
